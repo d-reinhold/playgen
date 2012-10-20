@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block body %}
+<!-- Main hero unit for a primary marketing message or call to action -->
+<div class="hero-unit">
+  <center><a href='/' id='playgen'><h1>Playgen</h1></a><center>
+	<br>
+  <p>Type a poem or song here, and get a customized Spotify playlist :) </p>
+  <form action="{{ url_for('create_playlist') }}" method="post" id="create-playlist">
+    <textarea name="query" rows=5 cols=40></textarea>
+ 	<p><a class="btn btn-primary btn-large" id="submit-query">Make my Playlist</a></p>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+body {
+  padding-top: 0px;
+  padding-bottom: 40px;
+}
+
+a#playgen{
+  text-decoration:none;
+  color:#2AA814;
+}
+
+.flash{ 
+  text-align:center;
+  background: #85CB02;         
+  border: 1px solid #589000;
+  margin-bottom:10px;
+}
