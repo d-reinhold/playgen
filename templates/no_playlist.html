@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block body %}
+<div class="hero-unit">
+  <center><a href='/' id='playgen'><h1>Playgen</h1></a><center>
+	<br>
+  <p>Sorry, we couldn't make a playlist for this phrase: </p>
+  <p><i>{{query}}</i></p>
+  <p>Click the back button to try again!</p>
+ 	<p><a class="btn btn-primary btn-large" id="submit-query" href="{{url_for('home')}}">Back</a></p>
+</div>
+{% endblock %}

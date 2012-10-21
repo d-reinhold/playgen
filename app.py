@@ -16,8 +16,7 @@ def create_playlist():
   q = request.form['query']
   r = generate_playlist.playlist(q)
   if r == [None]:
-    flash("Sorry! We couldn't generate a playlist with this phrase: " + q)
-    return render_template('home.html')
+    return render_template('no_playlist.html', query=q)
   else:
     print r
     return render_template('playlist.html', playlist = r)
