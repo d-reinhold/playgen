@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block body %}
+<div class="hero-unit">
+  <center><a href='/' id='playgen'><h1>Playgen</h1></a><center>
+	<br>
+  <p>Here's your new playlist! Enjoy! :) </p>
+  <ul class = "unstyled">
+    {% for track in playlist %}
+      <li><a href="http://open.spotify.com/track/{{track[2]}}">{{track[0]}}</a>{{" by " + track[1]}}</li>
+    {% endfor %}
+  </ul>
+ 	<p><a class="btn btn-primary btn-large" id="submit-query" href="{{url_for('home')}}">Back</a></p>
+</div>
+{% endblock %}

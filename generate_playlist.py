@@ -4,6 +4,7 @@ import urllib2
 import json
 
 
+
 start = time()
 begin = time()
 num_requests = 0
@@ -17,73 +18,115 @@ def playlist(query):
   begin = time()
   num_requests = 0
   # search for individual words first to ensure a solution exists
-  r = gen(query)
+  qlist = query.split(' ')
+  stride = create_stride(len(qlist))
+  dp_table = {"query": query, 'solution': None} 
+  r = gen(stride-1,0,len(qlist),qlist,dp_table)
   print "Total Elapsed: " + str(time() - begin)   
   return r
   
   
-  
-
-# return a list of track ids
-def gen(query):
-  if query == '':
-    print "query was empty string"
-    return []
-  l = query.split(' ')
-  matches = [] # make a priority queue?
-  for i in range(len(l),0,-1):
-    for j in range(0,len(l)-i+1):
-      substring = ' '.join(l[j:j+i])
-      print "attempting to match: " + substring
-      r = match(substring)
-      if r is not None:
-        print "Found a partial match: " + r["title"]
-        back = []
-        front = []
-        if j != 0:
-          # need to check the front substring
-          front = gen(' '.join(l[0:j]))
-          print front
-        if j+i != len(l):
-          # need to check the back substring
-          back = gen(' '.join(l[j+i:len(l)+1]))
-          print back
-        uids = front+[r["title"],r["artist"]]+back
-        if all(elt is not None for elt in uids):
-          #matches.append(uids)
-          return uids
-        else:
-          print "found some Nones!"
-  return [None]
-       
-  
-def match(substring):
-  # first check the cache for a possible match!
-  if substring in cache:
-    print "Found " + substring + " in the cache!"
-    return {"title": cache[substring], "artist": cache[substring]["artist"], "uid": cache[substring]["uid"]}
+def create_stride(n):
+  # A simple heuristic based on the length of the input and
+  # the average length of songs on Spotify.
+  if n > 10:
+    return 5
+  elif n > 6:
+    return 4
   else:
-    search_results = query_api(substring)
-    total_matches = search_results['info']['num_results']
-    print total_matches
-    for track in search_results["tracks"]:
-      #if "external-ids" in track:
-        #cache[track["name"]] = {"title": track["name"], "artist": track["artists"][0]["name"], "uid": track["external-ids"][0]["id"]}
-      #print q.lower()
-      #print track["name"].encode('utf8').lower()
-      if track["name"].lower() == substring.lower():
-        title = track["name"]
-        artist = track["artists"][0]["name"]
-        uid = track["external-ids"][0]["id"]
-        return {"title": title, "artist": artist, "uid": uid}
-    return None
+    return min(3,n)
+    
+def gen(r,c,n,l,dp_table):
+  start_c = c
+  for i in range(r,-1,-1):
+    for j in range(c,n-i):
+      substring = ' '.join(l[j:j+i+1])
+      #print "attempting to match: " + substring
+      if (i,j) not in dp_table:
+        #print substring + " is not in the dp table!"
+        m = match(substring)
+        if m["title"] is None:
+          #print substring + " has no exact matches."
+          dp_table[(i,j)] = None       
+          if m["total_results"] == 0:
+            #print substring + " has no partial matches either!"
+             #Fill in zeroes for entries below in the same column (j)
+             #and lower diagonal entries
+            for idx in range(0,n-i-1):
+              dp_table[(idx+i,j)] = None
+              dp_table[(idx+i,j-idx-1)] = None
+        else:
+          print substring + " has some partial match!"
+          dp_table[(i,j)] = m  
+      #else:
+        #print substring +"  is in the dp_table and has value " + str(dp_table[(i,j)]) 
+      r = dp_table[(i,j)] 
+      if r is not None:
+        #print "Partial match exits for: " + r["title"]
+        #print (i,j,n,start_c)
+        if j != start_c:
+          #print "Recursing on front:  " + str((j-1,start_c,j))
+          gen(j-1,start_c,j,l,dp_table)
+          #print "Recursion complete for some front"
+        if j+i+1 != n:
+          #print "Recursing on back:  " + str((n-i-j-1,i+j+1,n))
+          gen(n-i-j-1,i+j+1,n,l,dp_table)
+          #print "Recursion complete for some back"
+        #print dp_table
+        if dp_table['solution'] == None:
+          matches = []
+          for k,v in dp_table.iteritems():
+            if v is not None and k != 'query' and k != 'solution':
+              matches.append(v)
+              sol = get_solution(matches,dp_table['query'].lower())
+              if sol != [False]:
+                dp_table['solution'] = sol
+        else:
+          return dp_table['solution']
+  return [None]
+  
+  
+def get_solution(matches,query):
+  #print 'getting solution'
+  if query == '':
+    #print "query is empty!"
+    return []
+  elif matches == [] or matches is None:
+    #print 'matches is empty or None'
+    return [False]
+  else:
+    pos_solutions = []
+    #print "Query is currently: " + query
+    for match in matches:
+      #print match
+      if query.find(match['title'].lower()) == 0:
+        rem_matches = matches[:]
+        rem_matches.remove(match)
+        part_sol = get_solution(rem_matches,query.replace(match['title'].lower(),'',1).strip())
+        #print part_sol
+        sol= [[match['title'].encode('utf-8'), match['artist'].encode('utf-8'), match['link'].encode('utf-8') ]]+part_sol
+        if all(elt is not False for elt in sol):
+          return sol
+    return [False]
+
+
+def match(substring):
+  search_results = query_api(substring)
+  total_results = search_results['info']['num_results']
+  for track in search_results["tracks"]:
+    if track["name"].lower() == substring.lower():
+      title = track["name"]
+      artist = track["artists"][0]["name"]
+      link = track["href"].split(':')[-1]
+      return {"title": title, "artist": artist, "link": link, "total_results": total_results }
+  return {"title": None, "total_results": total_results }
   
 def query_api(query):
   global start
   global num_requests
   global cache
   search_query = urllib2.quote(query)
-  print "Searching for " + query + " as " + search_query + " on the Metadata API"
+  #print "Searching for " + query + " as " + search_query + " on the Metadata API"
   metadata_url = "http://ws.spotify.com/search/1/track.json?q=track:"
   elapsed = time()-start;
   if num_requests == 10:
@@ -100,67 +143,3 @@ def query_api(query):
   except Exception, e:
     return str(e)
   return json.loads(result)
-  
-  
-'''
-    def gen(q):
-      begin = time()
-      print "Generating Playlist"
-      query_list = q.split(' ')
-      results = {}
-      num_requests = 0
-      start = time()
-      for i in range(len(query_list)):
-        for j in range(i+1,len(query_list)+1):
-          search_string = " ".join(query_list[i:j])
-          search_query = urllib2.quote(search_string)
-          print "Searching for " + search_string + " as " + search_query
-          metadata_url = "http://ws.spotify.com/search/1/track.json?q="
-          elapsed = time()-start;
-          if num_requests == 10 and elapsed < 1:
-            print str(elapsed)
-            print "Sleeping!"
-            sleep(1 - elapsed)
-            num_requests = 0
-            start = time()
-          try:
-            data = urllib2.urlopen(metadata_url+search_query)
-            result = data.read()
-            num_requests += 1
-          except Exception, e:
-            return str(e)
-          search_results = json.loads(result)
-          total_matches = search_results['info']['num_results']
-          perfect_matches = 0
-
-          title = "No Matches"
-          artist = "None"
-          uid = "NA"
-          for track in search_results["tracks"]:
-            #print q.lower()
-            #print track["name"].encode('utf8').lower()
-            if track["name"].lower() == q.lower():
-              if title == "No Matches":
-                title = track["name"]
-                artist = track["artists"][0]["name"]
-                uid = track["external-ids"][0]["id"]
-              perfect_matches += 1
-              break
-
-
-          print "Num results: " + str(total_matches)
-          print "Perfect Matches: " + str(perfect_matches)
-          print "Track: " + title
-          print "Artist: "  + artist
-
-          results[search_string] = {"total_matches": total_matches, \
-                                   "perfect_matches": perfect_matches, \
-                                   "best": { \
-                                           "title" : title, \
-                                           "artist": artist, \
-                                           "uid"    : uid \
-                                           } \
-                                  }
-      print "Total Elapsed: " + str(time() - begin)            
-      return results
-      '''
