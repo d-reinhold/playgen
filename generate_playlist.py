@@ -79,8 +79,10 @@ def gen(r,c,n,l,dp_table):
             if v is not None and k != 'query' and k != 'solution':
               matches.append(v)
               sol = get_solution(matches,dp_table['query'].lower())
+              #print sol
               if sol != [False]:
                 dp_table['solution'] = sol
+                return sol
         else:
           return dp_table['solution']
   return [None]

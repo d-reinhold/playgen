@@ -2,7 +2,7 @@
 {% block body %}
 <!-- Main hero unit for a primary marketing message or call to action -->
 <div class="hero-unit">
-  <center><a href='/' id='playgen'><h1>Playgen</h1></a><center>
+  <center><a href='/' id='playgen'><img src="{{ url_for('static', filename='img/playgen-trans.png') }}"></a><center>
 	<br>
   <p>Type a poem or song here, and get a customized Spotify playlist :) </p>
   <form action="{{ url_for('create_playlist') }}" method="post" id="create-playlist">
