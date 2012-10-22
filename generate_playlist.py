@@ -4,9 +4,10 @@ import urllib2
 import json
 
 
-
 start = time()
 begin = time()
+sum_sol_time=0
+sum_request_time = 0
 num_requests = 0
 cache = {}
 
@@ -14,6 +15,7 @@ def playlist(query):
   global start
   global begin
   global num_requests
+
   start = time()
   begin = time()
   num_requests = 0
@@ -22,7 +24,9 @@ def playlist(query):
   stride = create_stride(len(qlist))
   dp_table = {"query": query, 'solution': None} 
   r = gen(stride-1,0,len(qlist),qlist,dp_table)
-  print "Total Elapsed: " + str(time() - begin)   
+  print "Total Elapsed: " + str(time() - begin)  
+  print "Total spent on solutions: " + str(sum_sol_time)
+  print "Total spent on requests: " + str(sum_request_time)
   return r
   
   
@@ -37,6 +41,7 @@ def create_stride(n):
     return min(3,n)
     
 def gen(r,c,n,l,dp_table):
+  global sum_sol_time
   start_c = c
   for i in range(r,-1,-1):
     for j in range(c,n-i):
@@ -78,7 +83,11 @@ def gen(r,c,n,l,dp_table):
           for k,v in dp_table.iteritems():
             if v is not None and k != 'query' and k != 'solution':
               matches.append(v)
+              t= time()
               sol = get_solution(matches,dp_table['query'].lower())
+              e= time()-t
+              sum_sol_time += e
+              #print "calculating sol took " + str(e) + "seconds"
               #print sol
               if sol != [False]:
                 dp_table['solution'] = sol
@@ -127,6 +136,7 @@ def query_api(query):
   global start
   global num_requests
   global cache
+  global sum_request_time
   search_query = urllib2.quote(query)
   #print "Searching for " + query + " as " + search_query + " on the Metadata API"
   metadata_url = "http://ws.spotify.com/search/1/track.json?q=track:"
@@ -139,9 +149,13 @@ def query_api(query):
       sleep(1 - elapsed)
       start = time()
   try:
+    t=time()
     data = urllib2.urlopen(metadata_url+search_query)
     result = data.read()
     num_requests += 1
+    e=time()-t
+    #print "request took " + str(e) + " seconds"
+    sum_request_time += e
   except Exception, e:
-    return str(e)
+    print str(e)
   return json.loads(result)
