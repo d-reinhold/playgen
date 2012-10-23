@@ -1,4 +1,8 @@
 # -*- coding: UTF-8 -*-
+# Author: Dominick Reinhold
+# Date: October 22, 2012
+# Playlist generator for a Spotify programming assignment
+
 from time import time, sleep
 import json
 import urllib2
