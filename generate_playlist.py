@@ -64,7 +64,6 @@ class PlaylistGenerator:
         substring = ' '.join(l[j:j+i+1])
         if (i,j) not in self.dp_table:
           m = self.match(substring)
-          print m
           if m["title"] is None:
             self.dp_table[(i,j)] = None       
             if m["total_results"] == 0:
@@ -75,22 +74,15 @@ class PlaylistGenerator:
                 self.dp_table[(idx+i,j-idx-1)] = None
           else:
             self.dp_table[(i,j)] = m  
-            print "hey"
-            print m
         r = self.dp_table[(i,j)] 
-        print "r: " + str(r)
         if r is not None:
           if j != start_c:
-            print "recursing on front"
             self.fill_table(j-1,start_c,j,l)
           if j+i+1 != n:
-            print "recursing on rear"
             self.fill_table(n-i-j-1,i+j+1,n,l)
             # before updating partial solutions, make sure stuff has been added to
             # the DP table, otherwise there's no point!
-          if self.solution_is_final == False and curr_dict_len < len(self.dp_table):
-            print "checking for solutions"
-          
+          if self.solution_is_final == False and curr_dict_len < len(self.dp_table):          
             return self.check_for_solutions()
           else:
             return self.best_solution
@@ -102,16 +94,12 @@ class PlaylistGenerator:
         sufficient for a 3 day hack!"""   
     matches = []
     substrings = []
-    print self.dp_table
     for k,v in self.dp_table.iteritems():
       if v is not None:
         matches.append(v)
         substrings.append([v])
     if self.potential_solutions == []:
-      print matches
-      print substrings
       psols = self.partial_solutions(self.query,matches,substrings)
-      print "psols: " + str(psols)
       
     else:
       psols = self.partial_solutions(self.query,matches,self.potential_solutions)
@@ -135,7 +123,6 @@ class PlaylistGenerator:
     partial_sols = []
     for potential_sol in potential_sols:
       sstring = ".*".join(map((lambda x: x['title']),potential_sol)).lower()
-      print sstring
       if re.search(sstring,query.lower()) is not None:
         partial_sols.append(potential_sol)
         new_potential_solutions = []
