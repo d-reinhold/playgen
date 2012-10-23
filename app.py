@@ -15,6 +15,8 @@ def home():
 def create_playlist():
   q = request.form['query']
   r = PlaylistGenerator(q).get_playlist()
+  if r[0] == "API Down":
+    return render_template('api_error.html') 
   if r[1] is None:
     return render_template('no_playlist.html', query=q)
   else:

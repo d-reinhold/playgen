@@ -42,9 +42,9 @@ class PlaylistGenerator:
         stride pattern that vastly increases the speed of playlist
         generation."""
     if n > 10:
-      return 5
-    elif n > 6:
       return 4
+    elif n > 6:
+      return 3
     else:
       return min(3,n)
     
@@ -78,9 +78,9 @@ class PlaylistGenerator:
         r = self.dp_table[(i,j)] 
         if r is not None:
           if j != start_c:
-            self.fill_table(j-1,start_c,j,l)
+            self.fill_table(self.create_stride(j-1),start_c,j,l)
           if j+i+1 != n:
-            self.fill_table(n-i-j-1,i+j+1,n,l)
+            self.fill_table(self.create_stride(n-i-j-1),i+j+1,n,l)
             # before updating partial solutions, make sure stuff has been added to
             # the DP table, otherwise there's no point!
           if self.solution_is_final == False and curr_dict_len < len(self.dp_table):          
@@ -181,7 +181,7 @@ class PlaylistGenerator:
   def query_api(self,query):
     """ This method queries the Spotify Metadata API to find all tracks that contain
         the substring 'query' """
-    search_query = urllib2.quote(query)
+    search_query = urllib2.quote(query.encode("utf-8"))
     metadata_url = "http://ws.spotify.com/search/1/track.json?q=track:"
     try:
       result = self.http.request('GET', metadata_url+search_query).data
