@@ -18,7 +18,8 @@ class PlaylistGenerator:
     self.query = query
     self.begin = time()
     self.timeout = 25  # This is so we don't go over the 30 second limit!
-    self.http = urllib3.PoolManager()    
+    self.http = urllib3.PoolManager()  
+    self.max_page = 10 # An arbitrary limit on the number of pages of search results to parse  
     self.potential_solutions = []
     self.best_solution = None
     self.solution_is_final = False
@@ -174,8 +175,7 @@ class PlaylistGenerator:
         It then parses the results and tries to find tracks that match the 
         query exactly. This process would be a lot more efficient if the API 
         supported exact matches as a search feature! """
-    max_page = 10
-    for page in range(1,max_page):
+    for page in range(1,self.max_page):
       search_results = self.query_api(substring,page)
       total_results = search_results['info']['num_results']
       for track in search_results["tracks"]:
