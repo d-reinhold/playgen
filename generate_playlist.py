@@ -82,8 +82,6 @@ class PlaylistGenerator:
           else:
             self.dp_table[(i,j)] = m  
         r = self.dp_table[(i,j)] 
-        print r
-        print (i,j)
         if r is not None:
           if j != start_c:
             self.fill_table(self.create_stride(j-1),start_c,j,l)
@@ -193,7 +191,6 @@ class PlaylistGenerator:
     search_query = urllib2.quote(query.encode("utf-8"))
     metadata_url = "http://ws.spotify.com/search/1/track.json?q=track:"
     page_query = "&page=" + str(page)
-    print "searching for " + search_query + page_query
     try:
       result = self.http.request('GET', metadata_url+search_query+page_query).data
     except Exception, e:
