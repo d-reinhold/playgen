@@ -3,10 +3,14 @@
 <div class="hero-unit">
   <center><a href='/' id='playgen'><img src="{{ url_for('static', filename='img/playgen.png') }}"></a><center>
 	<br>
-  <p>Here's your new playlist! Enjoy! :) </p>
+  {% if playlist[0] == 'perfect' %}
+    <p>Here's your new playlist! Enjoy! :) </p>
+  {% else %}
+    <p>We couldn't find a perfect playlist to match your phrase, but here's our best shot! Hope you like it ;) </p>
+  {% endif %}
   <ul class = "unstyled">
-    {% for track in playlist %}
-      <li><a href="http://open.spotify.com/track/{{track[2]}}">{{track[0]}}</a>{{" by " + track[1]}}</li>
+    {% for track in playlist[1] %}
+      <li><a href="http://open.spotify.com/track/{{track['link']}}">{{track['title']}}</a>{{" by " + track['artist']}}</li>
     {% endfor %}
   </ul>
  	<p><a class="btn btn-primary btn-large" id="submit-query" href="{{url_for('home')}}">Back</a></p>

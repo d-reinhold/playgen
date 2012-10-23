@@ -2,7 +2,7 @@ import os
 from flask import Flask, request, session, g, redirect, url_for, \
      abort, render_template, flash
 from pprint import pprint
-import generate_playlist
+from generate_playlist import PlaylistGenerator
 
 app = Flask(__name__)
 app.secret_key = 'why would I tell you my secret key?'
@@ -14,12 +14,13 @@ def home():
 @app.route('/create_playlist', methods=['POST'])
 def create_playlist():
   q = request.form['query']
-  r = generate_playlist.playlist(q)
-  if r == [None]:
+  r = PlaylistGenerator(q).get_playlist()
+  if r[1] is None:
     return render_template('no_playlist.html', query=q)
   else:
-    print r
     return render_template('playlist.html', playlist = r)
+
+
 
 
 
