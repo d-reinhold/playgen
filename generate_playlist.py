@@ -5,19 +5,15 @@ import urllib2
 import urllib3
 from pprint import pprint
 import re
-from unicodedata import category
-
 
 class PlaylistGenerator:
+  
   
   def __init__(self, query):
     """This method initializes a playlist generator for a single query"""
     self.query = query
     self.begin = time()
-    self.start = time()
-    self.num_requests = 0
-    self.http = urllib3.PoolManager()
-    
+    self.http = urllib3.PoolManager()    
     self.potential_solutions = []
     self.best_solution = None
     self.solution_is_final = False
@@ -25,6 +21,10 @@ class PlaylistGenerator:
     
 
   def get_playlist(self):
+    """This method gets the best playlist it can find for a query.
+       If a perfect solution (i.e. a playlist where all the words
+       from the query appear) has been found, return that, otherwise
+       return the next best thing!"""
     qlist = self.query.split(' ')
     stride = self.create_stride(len(qlist))
     result=self.fill_table(stride-1,0,len(qlist),qlist)
@@ -34,10 +34,12 @@ class PlaylistGenerator:
     else:
       return ['best',self.get_best_solution()]
     
-
+    
   def create_stride(self,n):
-    # A simple heuristic based on the length of the input and
-    # the average length of songs on Spotify.
+    """ A simple heuristic based on the length of the input and
+        the average length of songs on Spotify. This gives us a
+        stride pattern that vastly increases the speed of playlist
+        generation."""
     if n > 10:
       return 5
     elif n > 6:
@@ -45,79 +47,96 @@ class PlaylistGenerator:
     else:
       return min(3,n)
     
+    
   def fill_table(self,r,c,n,l):
+    """ fill_table is a modified dynamic programming algorithm that 
+        succeeds in two big ways: first it caches the results of API
+        lookups so we don't have to query for the same thing multiple
+        times, and it also finds good solutions quickly by filling in the 
+        DP table in an intellegent order. Please ask me questions if any
+        of this isn't totally clear!"""
     curr_dict_len = len(self.dp_table)
     start_c = c
     for i in range(r,-1,-1):
       for j in range(c,n-i):
+        if time() - self.begin > 25:
+          return self.best_solution
         substring = ' '.join(l[j:j+i+1])
-        print "attempting to match: " + substring
         if (i,j) not in self.dp_table:
-          #print substring + " is not in the dp table!"
           m = self.match(substring)
+          print m
           if m["title"] is None:
-            #print substring + " has no exact matches."
             self.dp_table[(i,j)] = None       
             if m["total_results"] == 0:
-              #print substring + " has no partial matches either!"
                #Fill in zeroes for entries below in the same column (j)
                #and lower diagonal entries
               for idx in range(0,n-i-1):
                 self.dp_table[(idx+i,j)] = None
                 self.dp_table[(idx+i,j-idx-1)] = None
           else:
-            print substring + " has some partial match!"
             self.dp_table[(i,j)] = m  
-        #else:
-          #print substring +"  is in the dp_table and has value " + str(dp_table[(i,j)]) 
+            print "hey"
+            print m
         r = self.dp_table[(i,j)] 
+        print "r: " + str(r)
         if r is not None:
-          #print "Partial match exits for: " + r["title"]
-          #print (i,j,n,start_c)
           if j != start_c:
-            print "Recursing on front:  " + str((j-1,start_c,j))
+            print "recursing on front"
             self.fill_table(j-1,start_c,j,l)
-            print "Recursion complete for some front"
           if j+i+1 != n:
-            print "Recursing on back:  " + str((n-i-j-1,i+j+1,n))
+            print "recursing on rear"
             self.fill_table(n-i-j-1,i+j+1,n,l)
-            print "Recursion complete for some back"
-          #print dp_table
-
+            # before updating partial solutions, make sure stuff has been added to
+            # the DP table, otherwise there's no point!
           if self.solution_is_final == False and curr_dict_len < len(self.dp_table):
-            matches = []
-            substrings = []
-            for k,v in self.dp_table.iteritems():
-              if v is not None:
-                matches.append(v)
-                substrings.append([v])
-            if self.potential_solutions == []:
-              psols = self.partial_solutions(self.query,matches,substrings)
-            else:
-              psols = self.partial_solutions(self.query,matches,self.potential_solutions)
-            self.potential_solutions = f4(psols)
-            for psol in psols:
-              is_best = " ".join(map((lambda x: x['title']),psol)).lower()
-              if is_best == self.query.lower():
-                self.best_solution = psol
-                self.solution_is_final = True
-                return psol
+            print "checking for solutions"
+          
+            return self.check_for_solutions()
           else:
             return self.best_solution
-  
-  
+          
 
+  def check_for_solutions(self):    
+    """ This method sets up the data structures for the partial_solutions
+        method. This code is messy and somewhat nonsensical; but hopefully
+        sufficient for a 3 day hack!"""   
+    matches = []
+    substrings = []
+    print self.dp_table
+    for k,v in self.dp_table.iteritems():
+      if v is not None:
+        matches.append(v)
+        substrings.append([v])
+    if self.potential_solutions == []:
+      print matches
+      print substrings
+      psols = self.partial_solutions(self.query,matches,substrings)
+      print "psols: " + str(psols)
+      
+    else:
+      psols = self.partial_solutions(self.query,matches,self.potential_solutions)
+    self.potential_solutions = remove_dupes(psols)
+    print self.potential_solutions
+    for psol in psols:
+      is_best = " ".join(map((lambda x: x['title']),psol)).lower()
+      if is_best == self.query.lower():
+        self.best_solution = psol
+        self.solution_is_final = True
+        return psol
+  
       
   def partial_solutions(self,query,matches,potential_sols):
+    """ Partial solutions is a rather silly method that periodically updates
+        the generator's current list of possible solutions. I make no claims
+        of optimality here, but it does do the trick! If I had more time, I 
+        would definitely improve this method! """
     # matches is a list of dicts
-    # substrings is a list lists of dicts
+    # potential_sols is a list lists of dicts
     partial_sols = []
     for potential_sol in potential_sols:
-      print str(potential_sol) + " is a potential solution list"
       sstring = ".*".join(map((lambda x: x['title']),potential_sol)).lower()
-      print "checking " + sstring
+      print sstring
       if re.search(sstring,query.lower()) is not None:
-        print sstring + " is a possible solution!"
         partial_sols.append(potential_sol)
         new_potential_solutions = []
         for m in matches:
@@ -125,11 +144,16 @@ class PlaylistGenerator:
           nps.append(m)
           new_potential_solutions.append(nps)
         psol = self.partial_solutions(query,matches,new_potential_solutions)
-        #pprint(psol)
         partial_sols=partial_sols+psol
     return partial_sols
 
+
   def get_best_solution(self):
+    """ This method finds the best playlist from a list of possible 
+        playlists. It first compiles a list of playlists which contain
+        are of a maximal length. It then selects the best of these by selecting 
+        the one with the most tracks in it. """
+    print "getting best solution"
     greatest_number_of_words = 0
     prelim_best_solutions = []
     for psol in self.potential_solutions:
@@ -140,15 +164,19 @@ class PlaylistGenerator:
         greatest_number_of_words = l
         prelim_best_solutions = [psol]
     best_solution = None
-    greatest_number_of_titles = 0
+    least_number_of_tracks = 999999
     for bsol in prelim_best_solutions:
-      if len(bsol) > greatest_number_of_titles:
-         greatest_number_of_titles = len(bsol)
+      if len(bsol) < least_number_of_tracks:
+         least_number_of_tracks = len(bsol)
          best_solution = bsol
     return best_solution     
 
 
   def match(self,substring):
+    """ Match takes a substring and looks it up on the Spotify Metadata API
+        It then parses the results and tries to find tracks that match the 
+        query exactly. This process would be a lot more efficient if the API 
+        supported exact matches as a search feature! """
     search_results = self.query_api(substring)
     total_results = search_results['info']['num_results']
     for track in search_results["tracks"]:
@@ -159,26 +187,21 @@ class PlaylistGenerator:
         return {"title": title, "artist": artist, "link": link, "total_results": total_results }
     return {"title": None, "total_results": total_results }
   
+  
   def query_api(self,query):
+    """ This method queries the Spotify Metadata API to find all tracks that contain
+        the substring 'query' """
     search_query = urllib2.quote(query)
-    #print "Searching for " + query + " as " + search_query + " on the Metadata API"
     metadata_url = "http://ws.spotify.com/search/1/track.json?q=track:"
-    if self.num_requests == 10:
-      self.num_requests = 0
-      if elapsed < 1:
-        print str(elapsed)
-        print "Sleeping!"
-        sleep(1 - elapsed)
-        self.start = time()
     try:
       result = self.http.request('GET', metadata_url+search_query).data
-      self.num_requests += 1
     except Exception, e:
       print str(e)
     return json.loads(result)
     
-def f4(seq): 
-   # order preserving
-   noDupes = []
-   [noDupes.append(i) for i in seq if not noDupes.count(i)]
-   return noDupes
+    
+def remove_dupes(seq): 
+  """ A simple method to remove duplicates from a list of non hashable objects"""
+  noDupes = []
+  [noDupes.append(i) for i in seq if not noDupes.count(i)]
+  return noDupes
