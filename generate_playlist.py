@@ -72,14 +72,17 @@ class PlaylistGenerator:
           if m["title"] is None:
             self.dp_table[(i,j)] = None       
             if m["total_results"] == 0:
-               #Fill in zeroes for entries below in the same column (j)
-               #and lower diagonal entries
-              for idx in range(0,n-i-1):
+               # Fill in zeroes for entries below in the same column (j)
+               # and lower left diagonal entries
+              for idx in range(1,n-j):
+                if j-idx>=0:
+                  self.dp_table[(idx+i,j-idx)] = None
                 self.dp_table[(idx+i,j)] = None
-                self.dp_table[(idx+i,j-idx-1)] = None
           else:
             self.dp_table[(i,j)] = m  
         r = self.dp_table[(i,j)] 
+        print r
+        print (i,j)
         if r is not None:
           if j != start_c:
             self.fill_table(self.create_stride(j-1),start_c,j,l)
@@ -92,7 +95,7 @@ class PlaylistGenerator:
           else:
             return self.best_solution
           
-
+          
   def check_for_solutions(self):    
     """ This method sets up the data structures for the partial_solutions
         method. This code is messy and somewhat nonsensical; but hopefully
@@ -171,28 +174,32 @@ class PlaylistGenerator:
         It then parses the results and tries to find tracks that match the 
         query exactly. This process would be a lot more efficient if the API 
         supported exact matches as a search feature! """
-    search_results = self.query_api(substring)
-    total_results = search_results['info']['num_results']
-    for track in search_results["tracks"]:
-      if track["name"].lower() == substring.lower():
-        title = track["name"]
-        artist = track["artists"][0]["name"]
-        link = track["href"].split(':')[-1]
-        return {"title": title, "artist": artist, "link": link, "total_results": total_results }
+    max_page = 10
+    for page in range(1,max_page):
+      search_results = self.query_api(substring,page)
+      total_results = search_results['info']['num_results']
+      for track in search_results["tracks"]:
+        if track["name"].lower() == substring.lower():
+          title = track["name"]
+          artist = track["artists"][0]["name"]
+          link = track["href"].split(':')[-1]
+          return {"title": title, "artist": artist, "link": link, "total_results": total_results }
     return {"title": None, "total_results": total_results }
 
   
-  def query_api(self,query):
+  def query_api(self,query,page=1):
     """ This method queries the Spotify Metadata API to find all tracks that contain
         the substring 'query' """
     search_query = urllib2.quote(query.encode("utf-8"))
     metadata_url = "http://ws.spotify.com/search/1/track.json?q=track:"
+    page_query = "&page=" + str(page)
+    print "searching for " + search_query + page_query
     try:
-      result = self.http.request('GET', metadata_url+search_query).data
+      result = self.http.request('GET', metadata_url+search_query+page_query).data
     except Exception, e:
       print str(e)
     return json.loads(result)
-    
+  
     
 def remove_dupes(seq): 
   """ A simple method to remove duplicates from a list of non hashable objects"""

@@ -5,7 +5,7 @@ from pprint import pprint
 from generate_playlist import PlaylistGenerator
 
 app = Flask(__name__)
-app.secret_key = 'nw485qyow745ynd378y'
+app.secret_key = 'not.really.relevant'
 
 @app.route('/')
 def home():
@@ -15,8 +15,6 @@ def home():
 def create_playlist():
   q = request.form['query']
   r = PlaylistGenerator(q).get_playlist()
-  if r[0] == "API Down":
-    return render_template('api_error.html') 
   if r[1] is None:
     return render_template('no_playlist.html', query=q)
   else:
