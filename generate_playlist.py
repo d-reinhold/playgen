@@ -187,15 +187,8 @@ class PlaylistGenerator:
         sleep(1 - elapsed)
         self.start = time()
     try:
-      t=time()
-      #result = urllib2.urlopen(metadata_url+search_query).read()
-      #result = requests.get(metadata_url+search_query).text
       result = self.http.request('GET', metadata_url+search_query).data
       self.num_requests += 1
-      e=time()-t
-      #print "request took " + str(e) + " seconds"
-      self.sum_request_time += e
-      #print self.sum_request_time
     except Exception, e:
       print str(e)
     return json.loads(result)
