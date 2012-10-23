@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 from time import time, sleep
 import json
+import urllib2
 import urllib3
 from pprint import pprint
 import re
@@ -14,11 +15,9 @@ class PlaylistGenerator:
     self.query = query
     self.begin = time()
     self.start = time()
-    self.request_queue = {}
-    self.http = urllib3.PoolManager()
-    self.sum_sol_time=0
-    self.sum_request_time = 0
     self.num_requests = 0
+    self.http = urllib3.PoolManager()
+    
     self.potential_solutions = []
     self.best_solution = None
     self.solution_is_final = False
@@ -29,12 +28,7 @@ class PlaylistGenerator:
     qlist = self.query.split(' ')
     stride = self.create_stride(len(qlist))
     result=self.fill_table(stride-1,0,len(qlist),qlist)
-
-    print "Here are the partial solutions:"
-    pprint(self.potential_solutions)
     print "Total Elapsed: " + str(time() - self.begin)  
-    print "Total spent on solutions: " + str(self.sum_sol_time)
-    print "Total spent on requests: " + str(self.sum_request_time)
     if self.solution_is_final:
       return ['perfect',self.best_solution]
     else:
@@ -97,20 +91,13 @@ class PlaylistGenerator:
               if v is not None:
                 matches.append(v)
                 substrings.append([v])
-            t= time()
-            #sol = self.get_solution(matches,self.query.lower())
             if self.potential_solutions == []:
               psols = self.partial_solutions(self.query,matches,substrings)
             else:
               psols = self.partial_solutions(self.query,matches,self.potential_solutions)
-            e= time()-t
-            self.sum_sol_time += e
             self.potential_solutions = f4(psols)
-            #print "calculating sol took " + str(e) + "seconds"
-            #print sol
             for psol in psols:
               is_best = " ".join(map((lambda x: x['title']),psol)).lower()
-              print "Checking if: " + is_best+ " is a final answer"
               if is_best == self.query.lower():
                 self.best_solution = psol
                 self.solution_is_final = True
@@ -122,10 +109,8 @@ class PlaylistGenerator:
 
       
   def partial_solutions(self,query,matches,potential_sols):
-    print "starting psols!"
     # matches is a list of dicts
     # substrings is a list lists of dicts
-    #print "Substrings! " + str(substrings)
     partial_sols = []
     for potential_sol in potential_sols:
       print str(potential_sol) + " is a potential solution list"
@@ -178,7 +163,6 @@ class PlaylistGenerator:
     search_query = urllib2.quote(query)
     #print "Searching for " + query + " as " + search_query + " on the Metadata API"
     metadata_url = "http://ws.spotify.com/search/1/track.json?q=track:"
-    elapsed = time()-self.start;
     if self.num_requests == 10:
       self.num_requests = 0
       if elapsed < 1:
