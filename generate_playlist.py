@@ -1,9 +1,6 @@
 # -*- coding: UTF-8 -*-
 from time import time, sleep
-import urllib2
 import json
-import Queue
-import requests
 import urllib3
 from pprint import pprint
 import re
@@ -202,89 +199,6 @@ class PlaylistGenerator:
     except Exception, e:
       print str(e)
     return json.loads(result)
-    
-    
-    
-  """  
-    
-    def fill_table(self,r,c,n,l):
-      start_c = c
-      for i in range(r,-1,-1):
-        for j in range(c,n-i):
-          substring = ' '.join(l[j:j+i+1])
-          #print "attempting to match: " + substring
-          if (i,j) not in self.dp_table:
-            #print substring + " is not in the dp table!"
-            m = self.match(substring)
-            if m["title"] is None:
-              #print substring + " has no exact matches."
-              self.dp_table[(i,j)] = None       
-              if m["total_results"] == 0:
-                #print substring + " has no partial matches either!"
-                 #Fill in zeroes for entries below in the same column (j)
-                 #and lower diagonal entries
-                for idx in range(0,n-i-1):
-                  self.dp_table[(idx+i,j)] = None
-                  self.dp_table[(idx+i,j-idx-1)] = None
-            else:
-              print substring + " has some partial match!"
-              self.dp_table[(i,j)] = m  
-          #else:
-            #print substring +"  is in the dp_table and has value " + str(dp_table[(i,j)]) 
-          r = self.dp_table[(i,j)] 
-          if r is not None:
-            #print "Partial match exits for: " + r["title"]
-            #print (i,j,n,start_c)
-            if j != start_c:
-              #print "Recursing on front:  " + str((j-1,start_c,j))
-              self.fill_table(j-1,start_c,j,l)
-              #print "Recursion complete for some front"
-            if j+i+1 != n:
-              #print "Recursing on back:  " + str((n-i-j-1,i+j+1,n))
-              self.fill_table(n-i-j-1,i+j+1,n,l)
-              #print "Recursion complete for some back"
-            #print dp_table
-            if self.solution_is_final == False:
-              matches = []
-              for k,v in self.dp_table.iteritems():
-                if v is not None:
-                  matches.append(v)
-                  t= time()
-                  sol = self.get_solution(matches,self.query.lower())
-                  e= time()-t
-                  self.sum_sol_time += e
-                  #print "calculating sol took " + str(e) + "seconds"
-                  #print sol
-                  if sol != [False]:
-                    self.best_solution = sol
-                    self.solution_is_final = True
-                    return sol
-            else:
-              return self.best_solution
-      return [None]
-      
-      
-  def get_solution(self,matches,query):
-    #print 'getting solution'
-    if query == '':
-      #print "query is empty!"
-      return []
-    elif matches == [] or matches is None:
-      #print 'matches is empty or None'
-      return [False]
-    else:
-      pos_solutions = []
-      #print "Query is currently: " + query
-      for match in matches:
-        #print match
-        if query.find(match['title'].lower()) == 0:
-          part_sol = self.get_solution(matches,query.replace(match['title'].lower(),'',1).strip())
-          #print part_sol
-          sol= [[match['title'].encode('utf-8'), match['artist'].encode('utf-8'), match['link'].encode('utf-8') ]]+part_sol
-          if all(elt is not False for elt in sol):
-            return sol
-      return [False]  
-    """
     
 def f4(seq): 
    # order preserving
