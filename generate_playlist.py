@@ -13,6 +13,7 @@ class PlaylistGenerator:
     """This method initializes a playlist generator for a single query"""
     self.query = query
     self.begin = time()
+    self.timeout = 25  # This is so we don't go over the 30 second limit!
     self.http = urllib3.PoolManager()    
     self.potential_solutions = []
     self.best_solution = None
@@ -59,7 +60,7 @@ class PlaylistGenerator:
     start_c = c
     for i in range(r,-1,-1):
       for j in range(c,n-i):
-        if time() - self.begin > 25:
+        if time() - self.begin > self.timeout:
           return self.best_solution
         substring = ' '.join(l[j:j+i+1])
         if (i,j) not in self.dp_table:
@@ -104,7 +105,6 @@ class PlaylistGenerator:
     else:
       psols = self.partial_solutions(self.query,matches,self.potential_solutions)
     self.potential_solutions = remove_dupes(psols)
-    print self.potential_solutions
     for psol in psols:
       is_best = " ".join(map((lambda x: x['title']),psol)).lower()
       if is_best == self.query.lower():
@@ -124,6 +124,8 @@ class PlaylistGenerator:
     for potential_sol in potential_sols:
       sstring = ".*".join(map((lambda x: x['title']),potential_sol)).lower()
       if re.search(sstring,query.lower()) is not None:
+        if time() - self.begin > self.timeout:
+          return [potential_sol]
         partial_sols.append(potential_sol)
         new_potential_solutions = []
         for m in matches:
@@ -133,6 +135,7 @@ class PlaylistGenerator:
         psol = self.partial_solutions(query,matches,new_potential_solutions)
         partial_sols=partial_sols+psol
     return partial_sols
+
 
 
   def get_best_solution(self):
@@ -173,7 +176,7 @@ class PlaylistGenerator:
         link = track["href"].split(':')[-1]
         return {"title": title, "artist": artist, "link": link, "total_results": total_results }
     return {"title": None, "total_results": total_results }
-  
+
   
   def query_api(self,query):
     """ This method queries the Spotify Metadata API to find all tracks that contain

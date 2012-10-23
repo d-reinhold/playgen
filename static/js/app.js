@@ -9,6 +9,9 @@ $(document).ready(function() {
       setTimeout(function() {
          $("#more-searching-text").fadeIn(1000)
       }, 5000);
+      setTimeout(function() {
+         $("#even-more-searching-text").fadeIn(1000)
+      }, 15000);
       
     })
     
