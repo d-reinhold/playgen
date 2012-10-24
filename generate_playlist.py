@@ -65,7 +65,7 @@ class PlaylistGenerator:
     start_c = c
     for i in range(r,-1,-1):
       for j in range(c,n-i):
-        if time() - self.begin > self.timeout:
+        if self.out_of_time():
           return self.best_solution
         substring = ' '.join(l[j:j+i+1])
         if (i,j) not in self.dp_table:
@@ -130,7 +130,7 @@ class PlaylistGenerator:
     for potential_sol in potential_sols:
       sstring = ".*".join(map((lambda x: x['title']),potential_sol)).lower()
       if re.search(sstring,query.lower()) is not None:
-        if time() - self.begin > self.timeout:
+        if self.out_of_time():
           return [potential_sol]
         partial_sols.append(potential_sol)
         new_potential_solutions = []
@@ -176,7 +176,9 @@ class PlaylistGenerator:
     search_results = self.query_api(substring,1)
     total_results = search_results['info']['num_results']
     for page in range(2,min(self.max_page, int(total_results)/100)+1):
-      print int(total_results)-(page*100)
+      if self.out_of_time():
+        break
+      #print int(total_results)-(page*100)
       for track in search_results["tracks"]:
         if track["name"].lower() == substring.lower():
           title = track["name"]
@@ -194,13 +196,15 @@ class PlaylistGenerator:
     search_query = urllib2.quote(query.encode("utf-8"))
     metadata_url = "http://ws.spotify.com/search/1/track.json?q=track:"
     page_query = "&page=" + str(page)
-    print search_query+page_query
+    #print search_query+page_query
     try:
       result = self.http.request('GET', metadata_url+search_query+page_query).data
     except Exception, e:
       print str(e)
     return json.loads(result)
-  
+    
+  def out_of_time(self):
+    return (time() - self.begin) > self.timeout
     
 def remove_dupes(seq): 
   """ A simple method to remove duplicates from a list of non hashable objects"""
