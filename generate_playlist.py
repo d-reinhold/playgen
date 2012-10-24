@@ -173,15 +173,18 @@ class PlaylistGenerator:
         It then parses the results and tries to find tracks that match the 
         query exactly. This process would be a lot more efficient if the API 
         supported exact matches as a search feature! """
-    for page in range(1,self.max_page):
-      search_results = self.query_api(substring,page)
-      total_results = search_results['info']['num_results']
+    search_results = self.query_api(substring,1)
+    total_results = search_results['info']['num_results']
+    for page in range(2,min(self.max_page, int(total_results)/100)+1):
+      print int(total_results)-(page*100)
       for track in search_results["tracks"]:
         if track["name"].lower() == substring.lower():
           title = track["name"]
           artist = track["artists"][0]["name"]
           link = track["href"].split(':')[-1]
           return {"title": title, "artist": artist, "link": link, "total_results": total_results }
+      search_results = self.query_api(substring,page)
+      total_results = search_results['info']['num_results']
     return {"title": None, "total_results": total_results }
 
   
@@ -191,6 +194,7 @@ class PlaylistGenerator:
     search_query = urllib2.quote(query.encode("utf-8"))
     metadata_url = "http://ws.spotify.com/search/1/track.json?q=track:"
     page_query = "&page=" + str(page)
+    print search_query+page_query
     try:
       result = self.http.request('GET', metadata_url+search_query+page_query).data
     except Exception, e:

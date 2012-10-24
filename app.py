@@ -13,7 +13,7 @@ def home():
   
 @app.route('/create_playlist', methods=['POST'])
 def create_playlist():
-  q = request.form['query']
+  q = request.form['query'].strip().replace('\n', ' ').replace('\r', ' ')
   r = PlaylistGenerator(q).get_playlist()
   if r[1] is None:
     return render_template('no_playlist.html', query=q)
@@ -24,10 +24,6 @@ if __name__ == '__main__':
     # Bind to PORT if defined, otherwise default to 5000.
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-    
-    
 
-
-  
 
   
